@@ -1,8 +1,11 @@
+const path = require('node:path');
 const express = require('express');
 const Contact = require('./models/Contact');
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '16kb' }));
+// Serve the dashboard (public/index.html) at "/"
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 function validateBody(req, res, next) {
   const body = req.body;
@@ -19,7 +22,7 @@ function validateBody(req, res, next) {
   next();
 }
 
-app.get('/', (req, res) => res.json({ message: 'Contact Management API', contacts: '/contacts' }));
+app.get('/api', (req, res) => res.json({ message: 'Contact Management API', contacts: '/contacts' }));
 app.post('/contacts', validateBody, async (req, res) => {
   const contact = await Contact.create(req.body);
   res.location(`/contacts/${encodeURIComponent(contact.contactId)}`).status(201).json(contact);
