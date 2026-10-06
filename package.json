@@ -2,12 +2,10 @@
   "name": "contact-management",
   "version": "1.0.0",
   "description": "Contact Management REST API using Node.js, Express, MongoDB and Mongoose",
-  "main": "src/server.js",
+  "main": "index.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "test": "node --test --test-concurrency=1 test/*.test.js",
-    "test:postman": "node scripts/test-postman.js"
+    "dev": "nodemon src/server.js"
   },
   "keywords": [],
   "author": "",
@@ -18,13 +16,7 @@
     "express": "^5.2.1",
     "mongoose": "^9.10.2"
   },
-  "engines": {
-    "node": ">=22"
-  },
   "devDependencies": {
-    "mongodb-memory-server": "^11.3.0",
-    "newman": "^6.2.2",
-    "nodemon": "^3.1.14",
-    "supertest": "^7.3.0"
+    "nodemon": "^3.1.14"
   }
 }
