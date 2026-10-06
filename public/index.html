@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact Manager</title>
+<style>
+  :root {
+    --bg: #f4f6fb; --card: #ffffff; --text: #1b2433; --muted: #6b7587; --line: #e4e8f0;
+    --brand: #3b5bdb; --brand-dark: #2f49b0; --danger: #d6336c; --ok: #2b8a3e;
+    --shadow: 0 1px 3px rgba(20,30,60,.08), 0 8px 24px rgba(20,30,60,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1420; --card: #171e2e; --text: #e8ecf5; --muted: #8e99b0; --line: #26304a;
+      --brand: #748ffc; --brand-dark: #91a7ff; --shadow: none; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 16px 60px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -.01em; }
+  .sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .stat b { display: block; font-size: 26px; }
+  .stat span { color: var(--muted); font-size: 13px; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  input, button { font: inherit; }
+  .search { flex: 1; min-width: 200px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); }
+  .search:focus, .field input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+  .btn { border: 0; border-radius: 10px; padding: 10px 16px; cursor: pointer; font-weight: 600;
+    background: var(--brand); color: #fff; }
+  .btn:hover { background: var(--brand-dark); }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .btn.ghost:hover { background: var(--line); }
+  .btn.danger { background: var(--danger); }
+  .btn.small { padding: 6px 10px; font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  tr:last-child td { border-bottom: 0; }
+  .avatar { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--brand); color: #fff; font-weight: 700; margin-right: 10px; vertical-align: middle; }
+  .id { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: var(--muted); }
+  .actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .empty, .loading { text-align: center; padding: 48px 16px; color: var(--muted); }
+  .banner { background: #fff3cd; color: #664d03; border: 1px solid #ffe69c; border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 14px; font-size: 14px; display: none; }
+  dialog { border: 0; border-radius: 16px; padding: 0; width: min(440px, 92vw); background: var(--card); color: var(--text); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+  dialog::backdrop { background: rgba(10,14,25,.55); }
+  form { padding: 22px; }
+  form h2 { margin: 0 0 16px; font-size: 18px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+  .field input { width: 100%; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  .field input[readonly] { opacity: .6; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .errors { background: rgba(214,51,108,.1); color: var(--danger); border-radius: 9px; padding: 10px 12px; font-size: 13px; margin-bottom: 14px; display: none; }
+  .errors ul { margin: 0; padding-left: 18px; }
+  .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+  #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1b2433; color: #fff;
+    padding: 11px 18px; border-radius: 10px; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; z-index: 20; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.err { background: var(--danger); }
+  @media (max-width: 640px) {
+    .hide-sm { display: none; }
+    th, td { padding: 10px 10px; }
+    .stats { grid-template-columns: 1fr 1fr 1fr; }
+    .stat b { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Contact Manager</h1>
+      <div class="sub">Node.js · Express · MongoDB · Mongoose</div>
+    </div>
+    <button class="btn" id="addBtn">+ Add contact</button>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <section class="stats">
+    <div class="stat"><b id="statTotal">0</b><span>Total contacts</span></div>
+    <div class="stat"><b id="statEmail">0</b><span>With email</span></div>
+    <div class="stat"><b id="statShown">0</b><span>Showing</span></div>
+  </section>
+
+  <div class="toolbar">
+    <input class="search" id="search" type="search" placeholder="Search by name, phone, email or ID…" aria-label="Search contacts">
+    <button class="btn ghost" id="refreshBtn">Refresh</button>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Phone</th><th class="hide-sm">Email</th><th class="hide-sm">ID</th><th></th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="loading" id="loading">Loading contacts…</div>
+    <div class="empty" id="empty" hidden>No contacts yet. Click “Add contact” to create one.</div>
+  </div>
+</div>
+
+<dialog id="formDialog">
+  <form id="form" novalidate>
+    <h2 id="formTitle">Add contact</h2>
+    <div class="errors" id="formErrors"></div>
+    <div class="field">
+      <label for="fId">Contact ID</label>
+      <input id="fId" autocomplete="off" placeholder="Auto-generated if empty" maxlength="64">
+      <div class="hint" id="idHint">Letters, digits, _ and - only. Cannot be changed later.</div>
+    </div>
+    <div class="field">
+      <label for="fName">Name *</label>
+      <input id="fName" autocomplete="off" required>
+    </div>
+    <div class="field">
+      <label for="fPhone">Phone *</label>
+      <input id="fPhone" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="10 digits" required>
+    </div>
+    <div class="field">
+      <label for="fEmail">Email</label>
+      <input id="fEmail" type="email" autocomplete="off" placeholder="optional">
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+      <button type="submit" class="btn" id="saveBtn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="delDialog">
+  <form method="dialog" id="delForm">
+    <h2>Delete contact?</h2>
+    <p id="delText" style="color:var(--muted);margin:0 0 18px"></p>
+    <div class="form-actions">
+      <button type="button" class="btn ghost" id="delCancel">Cancel</button>
+      <button type="button" class="btn danger" id="delConfirm">Delete</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" role="status"></div>
+
+<script>
+(() => {
+  // Relative base so it also works behind a path prefix such as /proxy/3000/
+  const BASE = location.pathname.endsWith('/') ? location.pathname : location.pathname + '/';
+  const api = (p) => BASE + p;
+
+  const $ = (id) => document.getElementById(id);
+  const rowsEl = $('rows'), loadingEl = $('loading'), emptyEl = $('empty'), banner = $('banner');
+  const formDialog = $('formDialog'), form = $('form'), formErrors = $('formErrors');
+  const delDialog = $('delDialog');
+  let contacts = [], editingId = null, deletingId = null, toastTimer;
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const initials = (n) => (n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('') || '?').toUpperCase();
+
+  function toast(msg, isErr) {
+    const t = $('toast');
+    t.textContent = msg; t.className = 'show' + (isErr ? ' err' : '');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.className = '', 2600);
+  }
+
+  async function request(method, path, body) {
+    const res = await fetch(api(path), {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined
+    });
+    let data = null;
+    try { data = await res.json(); } catch { /* non-JSON response */ }
+    if (!res.ok) {
+      const err = new Error((data && data.error) || `Request failed (${res.status})`);
+      err.details = (data && data.details) || [];
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  function render() {
+    const q = $('search').value.trim().toLowerCase();
+    const list = contacts.filter(c => !q ||
+      [c.name, c.phone, c.email, c.contactId].some(v => (v || '').toLowerCase().includes(q)));
+    $('statTotal').textContent = contacts.length;
+    $('statEmail').textContent = contacts.filter(c => c.email).length;
+    $('statShown').textContent = list.length;
+    rowsEl.innerHTML = list.map(c => `
+      <tr>
+        <td><span class="avatar">${esc(initials(c.name))}</span>${esc(c.name)}</td>
+        <td>${esc(c.phone)}</td>
+        <td class="hide-sm">${c.email ? esc(c.email) : '<span class="id">—</span>'}</td>
+        <td class="hide-sm"><span class="id">${esc(c.contactId)}</span></td>
+        <td><div class="actions">
+          <button class="btn ghost small" data-edit="${esc(c.contactId)}">Edit</button>
+          <button class="btn ghost small" data-del="${esc(c.contactId)}">Delete</button>
+        </div></td>
+      </tr>`).join('');
+    emptyEl.textContent = contacts.length
+      ? 'No contacts match your search.'
+      : 'No contacts yet. Click “Add contact” to create one.';
+    emptyEl.hidden = list.length > 0;
+  }
+
+  async function load() {
+    loadingEl.style.display = 'block'; banner.style.display = 'none';
+    try {
+      contacts = await request('GET', 'contacts');
+    } catch (e) {
+      banner.textContent = 'Could not load contacts: ' + e.message + '. Check that the server and MongoDB are running.';
+      banner.style.display = 'block';
+      contacts = [];
+    }
+    loadingEl.style.display = 'none';
+    render();
+  }
+
+  function showErrors(list) {
+    formErrors.innerHTML = list.length === 1 ? esc(list[0]) : '<ul>' + list.map(e => `<li>${esc(e)}</li>`).join('') + '</ul>';
+    formErrors.style.display = 'block';
+  }
+
+  function openForm(contact) {
+    editingId = contact ? contact.contactId : null;
+    formErrors.style.display = 'none';
+    $('formTitle').textContent = contact ? 'Edit contact' : 'Add contact';
+    $('fId').value = contact ? contact.contactId : '';
+    $('fId').readOnly = !!contact;
+    $('idHint').style.display = contact ? 'none' : 'block';
+    $('fName').value = contact ? contact.name : '';
+    $('fPhone').value = contact ? contact.phone : '';
+    $('fEmail').value = contact ? (contact.email || '') : '';
+    formDialog.showModal();
+    $('fName').focus();
+  }
+
+  // Digits only in the phone field
+  $('fPhone').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10); });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $('fName').value.trim(), phone = $('fPhone').value.trim();
+    const email = $('fEmail').value.trim(), cid = $('fId').value.trim();
+    const problems = [];
+    if (!name) problems.push('Name is required');
+    if (!/^\d{10}$/.test(phone)) problems.push('Phone must contain exactly 10 digits');
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) problems.push('Email must be a valid email address');
+    if (cid && !/^[A-Za-z0-9_-]+$/.test(cid)) problems.push('Contact ID may contain letters, digits, _ and - only');
+    if (problems.length) return showErrors(problems);
+
+    const body = { name, phone };
+    if (email) body.email = email;
+    $('saveBtn').disabled = true;
+    try {
+      if (editingId) {
+        // The API ignores empty strings as invalid, so only send email when present.
+        await request('PUT', 'contacts/' + encodeURIComponent(editingId), body);
+        toast('Contact updated');
+      } else {
+        if (cid) body.contactId = cid;
+        await request('POST', 'contacts', body);
+        toast('Contact added');
+      }
+      formDialog.close();
+      await load();
+    } catch (err) {
+      showErrors(err.details.length ? err.details : [err.message]);
+    } finally {
+      $('saveBtn').disabled = false;
+    }
+  });
+
+  rowsEl.addEventListener('click', (e) => {
+    const edit = e.target.closest('[data-edit]'), del = e.target.closest('[data-del]');
+    if (edit) openForm(contacts.find(c => c.contactId === edit.dataset.edit));
+    if (del) {
+      deletingId = del.dataset.del;
+      const c = contacts.find(x => x.contactId === deletingId);
+      $('delText').textContent = `This will permanently remove ${c ? c.name : 'this contact'}.`;
+      delDialog.showModal();
+    }
+  });
+
+  $('delConfirm').addEventListener('click', async () => {
+    try {
+      await request('DELETE', 'contacts/' + encodeURIComponent(deletingId));
+      toast('Contact deleted');
+      delDialog.close();
+      await load();
+    } catch (err) { delDialog.close(); toast(err.message, true); }
+  });
+
+  $('delCancel').addEventListener('click', () => delDialog.close());
+  $('cancelBtn').addEventListener('click', () => formDialog.close());
+  $('addBtn').addEventListener('click', () => openForm(null));
+  $('refreshBtn').addEventListener('click', load);
+  $('search').addEventListener('input', render);
+
+  load();
+})();
+</script>
+</body>
+</html>

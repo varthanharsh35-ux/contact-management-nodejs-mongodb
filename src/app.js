@@ -6,6 +6,9 @@ app.disable('x-powered-by');
 app.use(express.json({ limit: '16kb' }));
 // Serve the dashboard (public/index.html) at "/"
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
 
 function validateBody(req, res, next) {
   const body = req.body;
