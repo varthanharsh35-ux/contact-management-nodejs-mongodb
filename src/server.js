@@ -18,7 +18,7 @@ async function start() {
     console.log('Using built-in storage.');
   }
 
-  const server = app.listen(port, () => console.log(`Contact API running at http://localhost:${port}`));
+  const server = app.listen(port, '0.0.0.0', () => console.log(`Contact API running at http://0.0.0.0:${port}`));
   server.on('error', async err => {
     console.error('HTTP server failed:', err.code);
     await mongoose.disconnect().catch(() => {});

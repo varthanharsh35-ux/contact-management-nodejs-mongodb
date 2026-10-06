@@ -68,3 +68,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 module.exports = app;
+if (require.main === module) {
+  require('./server');
+}
